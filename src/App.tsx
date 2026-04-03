@@ -17,8 +17,6 @@ interface MapData {
   color: [number, number, number, number];
 }
 
-const minMax = [0.000, 553.115];
-const max = minMax[1];
 
 const INITIAL_VIEW_STATE = {
   longitude: 127.5,
@@ -37,9 +35,20 @@ async function loadGeoTIFF(url: string) {
   const height = image.getHeight();
   const bbox = image.getBoundingBox(); // [minX, minY, maxX, maxY] in degrees
 
-  console.log('GeoTIFF loaded:', { width, height, bbox });
+  const rasters = await image.readRasters();
+  const data = rasters[0] as Float32Array | Float64Array;
+  const noData = image.getGDALNoData();
 
-  return { width, height, bbox, rasterData };
+  let max = -Infinity;
+  for (let i = 0; i < data.length; i++) {
+    const v = data[i];
+    if (v === noData || !Number.isFinite(v)) continue;
+    if (v > max) max = v;
+  }
+
+  console.log('GeoTIFF loaded:', { width, height, bbox, max });
+
+  return { width, height, bbox, rasterData, max };
 }
 
 function App() {
@@ -50,7 +59,7 @@ function App() {
   useEffect(() => {
     async function loadData() {
       try {
-        const { width, height, bbox, rasterData } = await loadGeoTIFF(
+        const { width, height, bbox, rasterData, max } = await loadGeoTIFF(
           'https://odd-tiles.s3.us-east-1.amazonaws.com/pop-cog/2025/100m/total.tif'
         );
         const [minX, minY] = bbox;

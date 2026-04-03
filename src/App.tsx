@@ -67,6 +67,7 @@ function App() {
         const data = rasterData[0] as Float32Array | Float64Array;
 
         const temp: MapData[] = [];
+        let computedMax = 0;
 
         for (let i = 0; i < width; i += scaleUnit) {
           for (let j = 0; j < height; j += scaleUnit) {
@@ -82,8 +83,10 @@ function App() {
             if (sum > 0) {
               const gridX = i;
               const gridY = height - j;
+              const value = Math.round(sum) + 1;
+              if (value > computedMax) computedMax = value;
               temp.push({
-                value: Math.round(sum) + 1,
+                value,
                 x: minX + gridX * CELL_SIZE,
                 y: minY + gridY * CELL_SIZE,
                 color: [0, 0, 0, 255],
@@ -92,8 +95,7 @@ function App() {
           }
         }
 
-        // Compute max from aggregated values and assign colors
-        const computedMax = Math.max(...temp.map(d => d.value));
+        // Assign colors using computed max
         for (const d of temp) {
           const rgbValue = d3color.rgb(interpolateBuGn(d.value / computedMax));
           d.color = [rgbValue.r, rgbValue.g, rgbValue.b, 255];
@@ -121,7 +123,7 @@ function App() {
   // }, []);
 
   // dynamic extrusion value
-  const elevationScale = Math.min(50, 25 * Math.pow(1 / 75, (zoom - 9) / 3));
+  const elevationScale = Math.min(15000, 10000 * Math.pow(1 / 75, (zoom - 9) / 3));
 
   const layers = [
     new GridCellLayer<MapData>({
@@ -131,7 +133,7 @@ function App() {
       extruded: true,
       cellSize: roughMeter * scaleUnit,// * Math.sqrt(scaleUnit), // meters
       getPosition: (d) => [d.x, d.y],
-      getElevation: (d) => d.value / aggMax * 100,
+      getElevation: (d) => (d.value / aggMax),
       getFillColor: (d) => d.color,
       elevationScale,
       // onHover,

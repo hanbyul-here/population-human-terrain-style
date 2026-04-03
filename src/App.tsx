@@ -7,7 +7,7 @@ import { interpolateBuGn } from 'd3-scale-chromatic';
 import './App.css';
 
 const CELL_SIZE = 0.000833; // rough degrees
-const scaleUnit = 10;
+const scaleUnit = 5;
 const roughMeter = 70;
 
 interface MapData {
@@ -52,7 +52,6 @@ function App() {
       try {
         const { width, height, bbox, rasterData } = await loadGeoTIFF(
           'https://odd-tiles.s3.us-east-1.amazonaws.com/pop-cog/2025/100m/total.tif'
-          //'https://odd-tiles.s3.us-east-1.amazonaws.com/pop-cog/2025/pop_t_cog.tif' 
         );
         const [minX, minY] = bbox;
         const data = rasterData[0] as Float32Array | Float64Array;
@@ -123,7 +122,7 @@ function App() {
       {loading && (
         <div className="loader">
           <div className="spinner" />
-          <div>Loading GeoTIFF...</div>
+          <div>Loading Data...</div>
         </div>
       )}
       <DeckGL

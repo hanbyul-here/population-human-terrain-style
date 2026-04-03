@@ -61,7 +61,7 @@ function App() {
     async function loadData() {
       try {
         const { width, height, bbox, rasterData } = await loadGeoTIFF(
-          'https://odd-tiles.s3.us-east-1.amazonaws.com/pop-cog/2025/100m/total.tif'
+            'https://sk-population.s3.us-east-1.amazonaws.com/pop-cog/2025/100m/total.tif'
         );
         const [minX, minY] = bbox;
         const data = rasterData[0] as Float32Array | Float64Array;

@@ -38,8 +38,7 @@ async function loadGeoTIFF(url: string) {
   const height = image.getHeight();
   const bbox = image.getBoundingBox(); // [minX, minY, maxX, maxY] in degrees
 
-  const rasters = await image.readRasters();
-  const data = rasters[0] as Float32Array | Float64Array;
+  const data = rasterData[0] as Float32Array | Float64Array;
   const noData = image.getGDALNoData();
 
   let max = -Infinity;

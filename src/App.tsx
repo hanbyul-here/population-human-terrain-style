@@ -52,8 +52,6 @@ async function loadGeoTIFF(url: string) {
 
 function App() {
   const [mapData, setMapData] = useState<MapData[]>([]);
-  const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
-  // const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,7 +63,7 @@ function App() {
           
         );
 
-        const [minX, minY, maxX, maxY] = bbox;
+        const [minX, minY] = bbox;
         const data = rasterData[0] as Float32Array | Float64Array;
 
         const temp: MapData[] = [];
@@ -91,13 +89,6 @@ function App() {
 
         console.log(`Map data created: ${temp.length} cells`);
         setMapData(temp);
-
-        // Update view to center on data
-        setViewState((prev) => ({
-          ...prev,
-          longitude: (minX + maxX) / 2,
-          latitude: (minY + maxY) / 2,
-        }));
 
         setLoading(false);
       } catch (error) {

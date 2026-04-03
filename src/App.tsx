@@ -53,13 +53,14 @@ async function loadGeoTIFF(url: string) {
 
 function App() {
   const [mapData, setMapData] = useState<MapData[]>([]);
+  const [aggMax, setAggMax] = useState(1);
   const [zoom, setZoom] = useState(INITIAL_VIEW_STATE.zoom);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const { width, height, bbox, rasterData, max } = await loadGeoTIFF(
+        const { width, height, bbox, rasterData } = await loadGeoTIFF(
           'https://odd-tiles.s3.us-east-1.amazonaws.com/pop-cog/2025/100m/total.tif'
         );
         const [minX, minY] = bbox;
@@ -67,26 +68,39 @@ function App() {
 
         const temp: MapData[] = [];
 
-        for (let i = 0; i < width; i +=scaleUnit) {
-          for (let j = 0; j < height; j+=scaleUnit) {
-            const value = data[(width * j) + i];
-          if (value && value !== -99999 && value >= 0) {
-            const gridX = i ;
-            const gridY = height - j;
-            const rounded = Math.round(value) + 1;
-            const rgbValue = d3color.rgb(interpolateBuGn(rounded / max));
-            temp.push({
-              // extracting with 0 value gives glitch
-              value: rounded,
-              x: minX + gridX * CELL_SIZE,
-              y: minY + gridY * CELL_SIZE,
-              color: [rgbValue.r, rgbValue.g, rgbValue.b, 255],
-            });
-           }
+        for (let i = 0; i < width; i += scaleUnit) {
+          for (let j = 0; j < height; j += scaleUnit) {
+            let sum = 0;
+            for (let di = 0; di < scaleUnit && i + di < width; di++) {
+              for (let dj = 0; dj < scaleUnit && j + dj < height; dj++) {
+                const v = data[width * (j + dj) + (i + di)];
+                if (v && v !== -99999 && v >= 0) {
+                  sum += v;
+                }
+              }
+            }
+            if (sum > 0) {
+              const gridX = i;
+              const gridY = height - j;
+              temp.push({
+                value: Math.round(sum) + 1,
+                x: minX + gridX * CELL_SIZE,
+                y: minY + gridY * CELL_SIZE,
+                color: [0, 0, 0, 255],
+              });
+            }
           }
         }
 
-        console.log(`Map data created: ${temp.length} cells`);
+        // Compute max from aggregated values and assign colors
+        const computedMax = Math.max(...temp.map(d => d.value));
+        for (const d of temp) {
+          const rgbValue = d3color.rgb(interpolateBuGn(d.value / computedMax));
+          d.color = [rgbValue.r, rgbValue.g, rgbValue.b, 255];
+        }
+
+        console.log(`Map data created: ${temp.length} cells, aggMax: ${computedMax}`);
+        setAggMax(computedMax);
         setMapData(temp);
 
         setLoading(false);
@@ -117,9 +131,7 @@ function App() {
       extruded: true,
       cellSize: roughMeter * scaleUnit,// * Math.sqrt(scaleUnit), // meters
       getPosition: (d) => [d.x, d.y],
-      getElevation: (d) => {
-        return d.value *1.2
-      },
+      getElevation: (d) => d.value / aggMax * 100,
       getFillColor: (d) => d.color,
       elevationScale,
       // onHover,

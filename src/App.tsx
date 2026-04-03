@@ -7,7 +7,6 @@ import { fromUrl } from 'geotiff';
 import * as d3color from 'd3-color';
 
 import { interpolateMagma } from 'd3-scale-chromatic';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import './App.css';
 const CELL_SIZE = 0.000833; // degrees
 const scaleUnit = 10;

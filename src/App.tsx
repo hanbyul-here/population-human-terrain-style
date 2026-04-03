@@ -19,11 +19,6 @@ interface MapData {
   color: [number, number, number, number];
 }
 
-interface TooltipInfo {
-  x: number;
-  y: number;
-  object: MapData | null;
-}
 const minMax = [0.000, 553.115];
 const max = minMax[1];
 

@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import DeckGL from '@deck.gl/react';
+import {type MapViewState} from '@deck.gl/core';
 import { GridCellLayer } from '@deck.gl/layers';
 import { fromUrl } from 'geotiff';
+// @ts-expect-error d3 related type error, too lazy to handle
 import * as d3color from 'd3-color';
+// @ts-expect-error d3 related type error, too lazy to handle
 import { interpolateBuGn } from 'd3-scale-chromatic';
 import './App.css';
 
@@ -150,7 +153,7 @@ function App() {
       )}
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
-        onViewStateChange={({ viewState }) => setZoom(viewState.zoom)}
+        onViewStateChange={({ viewState }) => setZoom((viewState as MapViewState).zoom)}
         controller={true}
         layers={layers}
         // mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"

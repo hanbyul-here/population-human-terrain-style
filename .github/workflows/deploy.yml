@@ -14,21 +14,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  cache-and-install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+        name: Install pnpm
+        with:
+          version: 10
+          cache: true
+      - name: Install dependencies
+        run: pnpm install
   build-and-deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v5
+        name: Install pnpm
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci
-      - run: npm run build
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4

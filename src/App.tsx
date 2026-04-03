@@ -1,21 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import DeckGL from '@deck.gl/react';
-import {GridCellLayer} from '@deck.gl/layers';
+import { GridCellLayer } from '@deck.gl/layers';
+
 import { fromUrl } from 'geotiff';
 
 import * as d3color from 'd3-color';
 
-import { interpolateBuPu } from 'd3-scale-chromatic';
+import { interpolateMagma } from 'd3-scale-chromatic';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './App.css';
 const CELL_SIZE = 0.000833; // degrees
-const scaleUnit = 1;
+const scaleUnit = 10;
 const roughMeter = 70;
 
 interface MapData {
   value: number;
   x: number;
   y: number;
+  color: [number, number, number, number];
 }
 
 interface TooltipInfo {
@@ -29,9 +31,9 @@ const max = minMax[1];
 const INITIAL_VIEW_STATE = {
   longitude: 127.5,
   latitude: 36,
-  zoom: 7,
-  pitch: 60,
-  bearing: -30,
+  zoom: 12,
+  pitch: 55,
+  bearing: -20,
 };
 
 async function loadGeoTIFF(url: string) {
@@ -67,16 +69,23 @@ function App() {
         const data = rasterData[0] as Float32Array | Float64Array;
 
         const temp: MapData[] = [];
-        for (let i = 0; i < data.length; i+=scaleUnit) {
-          const value = data[i];
-          if (value && value !== -99999) {
-            const gridX = i % width;
-            const gridY = height - Math.floor(i / width);
+
+        for (let i = 0; i < width; i +=scaleUnit) {
+          for (let j = 0; j < height; j+=scaleUnit) {
+            const value = data[(width * j) + i];
+          if (value && value !== -99999 && value >= 0) {
+            const gridX = i ;
+            const gridY = height - j;
+            const rounded = Math.round(value) + 1;
+            const rgbValue = d3color.rgb(interpolateMagma(rounded / max));
             temp.push({
-              value: value,
+              // extracting with 0 value gives glitch
+              value: rounded,
               x: minX + gridX * CELL_SIZE,
               y: minY + gridY * CELL_SIZE,
+              color: [rgbValue.r, rgbValue.g, rgbValue.b, 255],
             });
+           }
           }
         }
 
@@ -96,7 +105,6 @@ function App() {
         setLoading(false);
       }
     }
-
     loadData();
   }, []);
 
@@ -116,14 +124,13 @@ function App() {
       data: mapData,
       // pickable: true,
       extruded: true,
-      cellSize: roughMeter * scaleUnit, // meters
+      cellSize: roughMeter * scaleUnit,// * Math.sqrt(scaleUnit), // meters
       getPosition: (d) => [d.x, d.y],
-      getElevation: (d) => d.value,
-      getFillColor: (d) => {
-        const rgbValue = d3color.rgb(interpolateBuPu(d.value / max));
-        return [rgbValue.r, rgbValue.g, rgbValue.b, 255];
+      getElevation: (d) => {
+        return d.value *1.2
       },
-      elevationScale: 35,
+      getFillColor: (d) => d.color,
+      elevationScale: 75,
       // transitions: {
       //   elevationScale: {
       //     duration: 300,
@@ -131,7 +138,7 @@ function App() {
       //   },
       // },
       // onHover,
-    }),
+    })
   ];
 
   return (

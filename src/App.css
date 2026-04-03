@@ -1,3 +1,6 @@
+body {
+  background-color: #333;
+}
 .map-container {
   width: 100vw;
   height: 100vh;

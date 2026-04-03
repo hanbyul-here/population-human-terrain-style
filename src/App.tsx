@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import DeckGL from '@deck.gl/react';
 import { GridCellLayer } from '@deck.gl/layers';
-
 import { fromUrl } from 'geotiff';
-
 import * as d3color from 'd3-color';
-
-import { interpolateMagma } from 'd3-scale-chromatic';
+import { interpolateBuGn } from 'd3-scale-chromatic';
 import './App.css';
-const CELL_SIZE = 0.000833; // degrees
+
+const CELL_SIZE = 0.000833; // rough degrees
 const scaleUnit = 10;
 const roughMeter = 70;
 
@@ -25,7 +23,7 @@ const max = minMax[1];
 const INITIAL_VIEW_STATE = {
   longitude: 127.5,
   latitude: 36,
-  zoom: 12,
+  zoom: 9,
   pitch: 55,
   bearing: -20,
 };
@@ -46,6 +44,7 @@ async function loadGeoTIFF(url: string) {
 
 function App() {
   const [mapData, setMapData] = useState<MapData[]>([]);
+  const [zoom, setZoom] = useState(INITIAL_VIEW_STATE.zoom);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,10 +52,8 @@ function App() {
       try {
         const { width, height, bbox, rasterData } = await loadGeoTIFF(
           'https://odd-tiles.s3.us-east-1.amazonaws.com/pop-cog/2025/100m/total.tif'
-          //'https://odd-tiles.s3.us-east-1.amazonaws.com/pop-cog/2025/pop_t_cog.tif' : 1km
-          
+          //'https://odd-tiles.s3.us-east-1.amazonaws.com/pop-cog/2025/pop_t_cog.tif' 
         );
-
         const [minX, minY] = bbox;
         const data = rasterData[0] as Float32Array | Float64Array;
 
@@ -69,7 +66,7 @@ function App() {
             const gridX = i ;
             const gridY = height - j;
             const rounded = Math.round(value) + 1;
-            const rgbValue = d3color.rgb(interpolateMagma(rounded / max));
+            const rgbValue = d3color.rgb(interpolateBuGn(rounded / max));
             temp.push({
               // extracting with 0 value gives glitch
               value: rounded,
@@ -101,7 +98,8 @@ function App() {
   //   }
   // }, []);
 
-  // Calculate elevationScale based on zoom level
+  // dynamic extrusion value
+  const elevationScale = Math.min(50, 25 * Math.pow(1 / 75, (zoom - 9) / 3));
 
   const layers = [
     new GridCellLayer<MapData>({
@@ -115,13 +113,7 @@ function App() {
         return d.value *1.2
       },
       getFillColor: (d) => d.color,
-      elevationScale: 75,
-      // transitions: {
-      //   elevationScale: {
-      //     duration: 300,
-      //     // easing: (t: number) => t, // linear easing
-      //   },
-      // },
+      elevationScale,
       // onHover,
     })
   ];
@@ -135,9 +127,8 @@ function App() {
         </div>
       )}
       <DeckGL
-        // viewState={viewState}
         initialViewState={INITIAL_VIEW_STATE}
-        // onViewStateChange={({ viewState }) => setViewState(viewState)}
+        onViewStateChange={({ viewState }) => setZoom(viewState.zoom)}
         controller={true}
         layers={layers}
         // mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
